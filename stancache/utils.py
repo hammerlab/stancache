@@ -5,7 +5,7 @@ import patsy
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from .seed import seed
+from . import seed
 import os
 import logging
 from matplotlib import pyplot as plt
