@@ -101,7 +101,10 @@ def _cached_stan_fit(model_name='anon_model', file=None, model_code=None,
                                                                pystan=pystan.__version__,
                                                                cython=Cython.__version__))])
     else:
-        logger.info('Note - no model code detected, from file ({}) or by code (len {})'.format(file, len(model_code)))
+        if file is not None:
+            logger.info('Note - no model code detected from given file: {}'.format(file))
+        else:
+            logger.info('Note - no model code detected (neither file nor model_code given)')
     if fit_cachefile:
         # if cachefile given, assume cache_only 
         if cache_only is None:
