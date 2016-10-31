@@ -12,7 +12,7 @@ from datetime import timedelta
 import pandas as pd
 import re
 import Cython
-from .config import get_setting_value
+from . import config
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ def _make_digest(k, **kwargs):
 
 def _get_cache_dir(cache_dir=None):
     if cache_dir is None:
-        cache_dir = get_setting_value('CACHE_DIR')
+        cache_dir = config.get_setting_value('CACHE_DIR')
         logger.debug('cache_dir set to {}'.format(cache_dir))
         _mkdir_if_not_exists(cache_dir)
     return cache_dir
@@ -159,7 +159,7 @@ def cached_stan_fit(iter=2000, chains=4, seed=None, *args, **kwargs):
     if len(arglist)>0:
         raise ValueError('unnamed args not permitted')
     if seed is None:
-        seed = get_setting_value('SEED')
+        seed = config.get_setting_value('SEED')
     return _cached_stan_fit(seed=seed, iter=iter, chains=chains, **kwargs)
 
 
