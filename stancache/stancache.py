@@ -6,7 +6,7 @@ import base64
 import logging 
 from fnmatch import fnmatch
 import ntpath
-import seed
+from . import seed
 from time import time
 from datetime import timedelta
 import pandas as pd
@@ -143,11 +143,11 @@ def _read_file(filepath):
     return data
 
 
-def cached_stan_fit(*args, iter=2000, chains=4, **kwargs):
+def cached_stan_fit(iter=2000, chains=4, seed=seed.seed, *args, **kwargs):
     arglist = list(*args)
     if len(arglist)>0:
         raise ValueError('unnamed args not permitted')
-    return _cached_stan_fit(seed=seed.seed, iter=iter, chains=chains, **kwargs)
+    return _cached_stan_fit(seed=seed, iter=iter, chains=chains, **kwargs)
 
 
 def cached(func, file_prefix='cached', cache_filename=None,
