@@ -6,17 +6,15 @@ import base64
 import logging 
 from fnmatch import fnmatch
 import ntpath
-import seed
+from . import seed
 from time import time
 from datetime import timedelta
 import pandas as pd
 import re
 import Cython
+from . import config
 
 logger = logging.getLogger(__name__)
-_this_dir = os.path.dirname(os.path.abspath(__file__))
-cache_dir = os.path.join(_this_dir, '.cached_models')
-seed.set_seed()
 
 def _mkdir_if_not_exists(path):
     try:
@@ -79,9 +77,15 @@ def _make_digest(k, **kwargs):
             result.append('{}_{}'.format(key, h))
         return '.'.join(result)
 
-
+def _get_cache_dir(cache_dir=None):
+    if cache_dir is None:
+        cache_dir = config.get_setting_value('CACHE_DIR')
+        logger.debug('cache_dir set to {}'.format(cache_dir))
+        _mkdir_if_not_exists(cache_dir)
+    return cache_dir
+    
 def _cached_stan_fit(model_name='anon_model', file=None, model_code=None,
-                    force=False, cache_dir=cache_dir, cache_only=None, 
+                    force=False, cache_dir=None, cache_only=None, 
                      fit_cachefile=None, **kwargs):
     ''' Cache fit stan model, by storing pickled objects in filesystem
     
@@ -91,6 +95,8 @@ def _cached_stan_fit(model_name='anon_model', file=None, model_code=None,
         When unpickling the StanModel must be unpickled first.
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
     '''
+    cache_dir = _get_cache_dir(cache_dir)
+
     ## cached, compiled StanModel
     if model_name: ## remove punc from model name
         model_name = re.sub(string=model_name, pattern='[\.\-]', repl='_')
@@ -100,6 +106,11 @@ def _cached_stan_fit(model_name='anon_model', file=None, model_code=None,
         model_prefix = '.'.join([model_name, _make_digest(dict(model_code=model_code,
                                                                pystan=pystan.__version__,
                                                                cython=Cython.__version__))])
+    else:
+        if file is not None:
+            logger.info('Note - no model code detected from given file: {}'.format(file))
+        else:
+            logger.info('Note - no model code detected (neither file nor model_code given)')
     if fit_cachefile:
         # if cachefile given, assume cache_only 
         if cache_only is None:
@@ -143,16 +154,19 @@ def _read_file(filepath):
     return data
 
 
-def cached_stan_fit(*args, iter=2000, chains=4, **kwargs):
+def cached_stan_fit(iter=2000, chains=4, seed=None, *args, **kwargs):
     arglist = list(*args)
     if len(arglist)>0:
         raise ValueError('unnamed args not permitted')
-    return _cached_stan_fit(seed=seed.seed, iter=iter, chains=chains, **kwargs)
+    if seed is None:
+        seed = config.get_setting_value('SEED')
+    return _cached_stan_fit(seed=seed, iter=iter, chains=chains, **kwargs)
 
 
 def cached(func, file_prefix='cached', cache_filename=None,
-            cache_dir=cache_dir, force=False, cache_only=False,
+            cache_dir=None, force=False, cache_only=False,
             compute_hash=True, *args, **kwargs):
+    cache_dir = _get_cache_dir(cache_dir)
     if not cache_filename:
         arglist = list(*args)
         if len(arglist)>0:
