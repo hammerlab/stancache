@@ -1,5 +1,6 @@
 import os
-import dill as pickle
+import pickle
+import dill
 import pystan
 import hashlib
 import base64
@@ -24,7 +25,7 @@ def _mkdir_if_not_exists(path):
 
 
 def _pickle_dumps_digest(item):
-    s = pickle.dumps(item)
+    s = dill.dumps(item)
     h = _digest(s)
     return h
 
