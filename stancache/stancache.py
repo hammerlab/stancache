@@ -25,6 +25,13 @@ def _mkdir_if_not_exists(path):
         pass
 
 
+def _make_digest_dataframe(item):
+    index = tuple(item.index)
+    columns = tuple(item.columns)
+    values = tuple(tuple(x) for x in item.values)
+    s = _pickle_dumps_digest(tuple([index, columns, values]))
+    return s
+
 def _pickle_dumps_digest(item):
     s = pickle.dumps(item)
     h = _digest(s)
@@ -55,7 +62,7 @@ def _make_digest_dict(k, prefix=''):
             result.update({pre_key: _digest(s.encode())})
         elif isinstance(item, pd.DataFrame):
             logger.debug('processing item ({}) as dataframe'.format(pre_key))
-            s = hash(str(item))
+            s = _make_digest_dataframe(item)
             result.update({pre_key: s})
         elif isinstance(item, types.FunctionType):
             logger.debug('processing item ({}) as function'.format(pre_key))
