@@ -102,6 +102,66 @@ def _get_cache_dir(cache_dir=None):
         _mkdir_if_not_exists(cache_dir)
     return cache_dir
     
+
+def cached_model_file(model_name='anon_model', file=None, model_code=None, cache_dir=None,
+                      fit_cachefile=None, include_prefix=False):
+    ''' Given model name & stan model code/file, compute path to cached stan fit
+        
+        if include_prefix, returns (model_prefix, model_cachefile)
+    '''
+    cache_dir = _get_cache_dir(cache_dir)
+    model_name = _sanitize_model_name(model_name)
+    ## compute model prefix
+    if file:
+        model_code = _read_file(file)
+    if model_code:
+        model_prefix = '.'.join([model_name, _make_digest(dict(model_code=model_code,
+                                                               pystan=pystan.__version__,
+                                                               cython=Cython.__version__))])
+    else: ## handle case where no model code given
+        if file is not None:
+            logger.info('Note - no model code detected from given file: {}'.format(file))
+        else:
+            logger.info('Note - no model code detected (neither file nor model_code given)')
+    ## parse model_prefix from fit_cachefile if given
+    if fit_cachefile:
+        # if necessary, impute cache_dir from filepath
+        if fit_cachefile != os.path.basename(fit_cachefile):
+            cache_dir, fit_cachefile = os.path.split(os.path.abspath(fit_cachefile))
+        # if fit_cachefile given, parse to get fit_model_prefix
+        fit_model_prefix = re.sub(string=os.path.basename(fit_cachefile), pattern='(.*).stanfit.*', repl='\\1')
+        if model_code:
+            if fit_model_prefix != model_prefix:
+                logger.warning('Computed model prefix does not match that used to estimate model. Using prefix matching fit_cachefile')
+        model_prefix = fit_model_prefix
+    # compute path to model cachefile
+    model_cachefile = '.'.join([model_prefix, 'stanmodel', 'pkl'])
+    if include_prefix:
+        return model_prefix, model_cachefile
+    return model_cachefile
+
+
+def cached_stan_file(model_name='anon_model', file=None, model_code=None,
+                  cache_dir=None, fit_cachefile=None, cache_only=None, force=False,
+                  include_modelfile=False,
+                  **kwargs
+                  ):
+    ''' Given inputs to cached_stan_fit, compute pickle file containing cached fit
+    '''
+    model_prefix, model_cachefile = cached_model_file(model_name=model_name, file=file, model_code=model_code,
+                                                      cache_dir=cache_dir, fit_cachefile=fit_cachefile, include_prefix=True)
+    if not fit_cachefile:
+        fit_cachefile = '.'.join([model_prefix, 'stanfit', _make_digest(dict(**kwargs)), 'pkl'])
+    if include_modelfile:
+        return model_cachefile, fit_cachefile
+    return fit_cachefile
+
+
+def _sanitize_model_name(model_name):
+    if model_name:
+        model_name = re.sub(string=model_name, pattern='[\.\-]', repl='_')
+    return model_name
+
 def _cached_stan_fit(model_name='anon_model', file=None, model_code=None,
                     force=False, cache_dir=None, cache_only=None, 
                      fit_cachefile=None, **kwargs):
@@ -113,36 +173,13 @@ def _cached_stan_fit(model_name='anon_model', file=None, model_code=None,
         When unpickling the StanModel must be unpickled first.
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
     '''
+    if fit_cachefile and cache_only is None:
+        cache_only = True
+    model_cachefile, fit_cachefile = cached_stan_file(model_name=model_name, file=file, model_code=model_code,
+                                                      cache_dir=cache_dir, fit_cachefile=fit_cachefile,
+                                                      include_modelfile=True, **kwargs)
     cache_dir = _get_cache_dir(cache_dir)
-
-    ## cached, compiled StanModel
-    if model_name: ## remove punc from model name
-        model_name = re.sub(string=model_name, pattern='[\.\-]', repl='_')
-    if file:
-        model_code = _read_file(file)
-    if model_code:
-        model_prefix = '.'.join([model_name, _make_digest(dict(model_code=model_code,
-                                                               pystan=pystan.__version__,
-                                                               cython=Cython.__version__))])
-    else:
-        if file is not None:
-            logger.info('Note - no model code detected from given file: {}'.format(file))
-        else:
-            logger.info('Note - no model code detected (neither file nor model_code given)')
-    if fit_cachefile:
-        # if cachefile given, assume cache_only 
-        if cache_only is None:
-            cache_only = True
-        # if necessary, impute cache_dir from filepath
-        if fit_cachefile != os.path.basename(fit_cachefile):
-            cache_dir, fit_cachefile = os.path.split(os.path.abspath(fit_cachefile))
-        # if fit_cachefile given, parse to get fit_model_prefix
-        fit_model_prefix = re.sub(string=os.path.basename(fit_cachefile), pattern='(.*).stanfit.*', repl='\\1')
-        if model_code:
-            if fit_model_prefix != model_prefix:
-                logger.warning('Computed model prefix does not match that used to estimate model. Using prefix matching fit_cachefile')
-        model_prefix = fit_model_prefix
-    model_cachefile = '.'.join([model_prefix, 'stanmodel', 'pkl'])
+    model_name = _sanitize_model_name(model_name)
     logger.info('Step 1: Get compiled model code, possibly from cache')
     stan_model = cached(func=pystan.StanModel,
                          cache_filename=model_cachefile,
@@ -152,9 +189,6 @@ def _cached_stan_fit(model_name='anon_model', file=None, model_code=None,
                          cache_only=cache_only,
                          force=force)
     
-    ## cached fitted Stan model, per given args
-    if not fit_cachefile:
-        fit_cachefile = '.'.join([model_prefix, 'stanfit', _make_digest(dict(**kwargs)), 'pkl'])
     ## either pull fitted model from cache, or fit model
     logger.info('Step 2: Get posterior draws from model, possibly from cache')
     fit = cached(func=stan_model.sampling,
