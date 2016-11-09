@@ -14,6 +14,7 @@ import pandas as pd
 import re
 import Cython
 from . import config
+import types
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ def _mkdir_if_not_exists(path):
 
 
 def _pickle_dumps_digest(item):
-    s = dill.dumps(item)
+    s = pickle.dumps(item)
     h = _digest(s)
     return h
 
@@ -55,6 +56,13 @@ def _make_digest_dict(k, prefix=''):
         elif isinstance(item, pd.DataFrame):
             logger.debug('processing item ({}) as dataframe'.format(pre_key))
             s = hash(str(item))
+            result.update({pre_key: s})
+        elif isinstance(item, types.FunctionType):
+            logger.debug('processing item ({}) as function'.format(pre_key))
+            try:
+                s = _pickle_dumps_digest(str(dill.source.getsource(item)))
+            except:
+                s = 'unhashable'
             result.update({pre_key: s})
         else:
             logger.debug('processing item ({}) as other (using pickle)'.format(pre_key))
