@@ -40,19 +40,24 @@ def _make_digest_dict(k, prefix=''):
     for (key, item) in sorted(k.items()):
         pre_key = '{}{}'.format(prefix, key)
         if isinstance(item, str) and len(item) <= 11:
+            logger.debug('processing item ({}) as str'.format(pre_key))
             s = re.sub(string=item, pattern='[\.\-]', repl='_')
             result.update({pre_key: s})
         elif isinstance(item, int) and len(str(item)) <= 11:
+            logger.debug('processing item ({}) as int'.format(pre_key))
             s = re.sub(string=str(item), pattern='[\.\-]', repl='_')
             result.update({pre_key: s})
         elif isinstance(item, dict):
+            logger.debug('processing item ({}) as dict'.format(pre_key)) 
             item = dict(sorted(item.items()))
             s = _make_digest(item, prefix=key+'-')
             result.update({pre_key: _digest(s.encode())})
         elif isinstance(item, pd.DataFrame):
+            logger.debug('processing item ({}) as dataframe'.format(pre_key))
             s = hash(str(item))
             result.update({pre_key: s})
         else:
+            logger.debug('processing item ({}) as other (using pickle)'.format(pre_key))
             s = _pickle_dumps_digest(item)
             result.update({pre_key: s})
     return result
