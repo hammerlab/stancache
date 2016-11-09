@@ -14,6 +14,7 @@ import pandas as pd
 import re
 import Cython
 from . import config
+import types
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,15 @@ def _mkdir_if_not_exists(path):
         pass
 
 
+def _make_digest_dataframe(item):
+    index = tuple(item.index)
+    columns = tuple(item.columns)
+    values = tuple(tuple(x) for x in item.values)
+    s = _pickle_dumps_digest(tuple([index, columns, values]))
+    return s
+
 def _pickle_dumps_digest(item):
-    s = dill.dumps(item)
+    s = pickle.dumps(item)
     h = _digest(s)
     return h
 
@@ -40,22 +48,31 @@ def _make_digest_dict(k, prefix=''):
     for (key, item) in sorted(k.items()):
         pre_key = '{}{}'.format(prefix, key)
         if isinstance(item, str) and len(item) <= 11:
+            logger.debug('processing item ({}) as str'.format(pre_key))
             s = re.sub(string=item, pattern='[\.\-]', repl='_')
             result.update({pre_key: s})
         elif isinstance(item, int) and len(str(item)) <= 11:
+            logger.debug('processing item ({}) as int'.format(pre_key))
             s = re.sub(string=str(item), pattern='[\.\-]', repl='_')
             result.update({pre_key: s})
         elif isinstance(item, dict):
+            logger.debug('processing item ({}) as dict'.format(pre_key)) 
             item = dict(sorted(item.items()))
             s = _make_digest(item, prefix=key+'-')
             result.update({pre_key: _digest(s.encode())})
         elif isinstance(item, pd.DataFrame):
-            index = tuple(item.index)
-            columns = tuple(item.columns)
-            values = tuple(tuple(x) for x in item.values)
-            s = _pickle_dumps_digest(tuple([index, columns, values]))
+            logger.debug('processing item ({}) as dataframe'.format(pre_key))
+            s = _make_digest_dataframe(item)
+            result.update({pre_key: s})
+        elif isinstance(item, types.FunctionType):
+            logger.debug('processing item ({}) as function'.format(pre_key))
+            try:
+                s = _pickle_dumps_digest(str(dill.source.getsource(item)))
+            except:
+                s = 'unhashable'
             result.update({pre_key: s})
         else:
+            logger.debug('processing item ({}) as other (using pickle)'.format(pre_key))
             s = _pickle_dumps_digest(item)
             result.update({pre_key: s})
     return result
