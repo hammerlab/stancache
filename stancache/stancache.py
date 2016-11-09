@@ -143,7 +143,7 @@ def cached_model_file(model_name='anon_model', file=None, model_code=None, cache
 
 def cached_stan_file(model_name='anon_model', file=None, model_code=None,
                   cache_dir=None, fit_cachefile=None, cache_only=None, force=False,
-                  include_modelfile=False,
+                  include_modelfile=False, prefix_only=False,
                   **kwargs
                   ):
     ''' Given inputs to cached_stan_fit, compute pickle file containing cached fit
@@ -154,6 +154,8 @@ def cached_stan_file(model_name='anon_model', file=None, model_code=None,
         fit_cachefile = '.'.join([model_prefix, 'stanfit', _make_digest(dict(**kwargs)), 'pkl'])
     if include_modelfile:
         return model_cachefile, fit_cachefile
+    if prefix_only:
+        fit_cachefile = re.sub(string=fit_cachefile, pattern='.pkl$', repl='')
     return fit_cachefile
 
 
