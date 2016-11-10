@@ -15,6 +15,8 @@ import re
 import Cython
 from . import config
 import types
+import numpy as np
+import xxhash
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +66,11 @@ def _make_digest_dict(k, prefix=''):
             logger.debug('processing item ({}) as dataframe'.format(pre_key))
             s = _make_digest_dataframe(item)
             result.update({pre_key: s})
+        elif isinstance(item, np.ndarray):
+            logger.debug('processing item ({}) as np.ndarray'.format(pre_key))
+            h = xxhash.xxh64(item)
+            s = h.intdigest()
+            result.update({pre_key: s})
         elif isinstance(item, types.FunctionType):
             logger.debug('processing item ({}) as function'.format(pre_key))
             try:
@@ -73,6 +80,7 @@ def _make_digest_dict(k, prefix=''):
             result.update({pre_key: s})
         else:
             logger.debug('processing item ({}) as other (using pickle)'.format(pre_key))
+            logger.debug('note: item ({}) is of type: {}'.format(pre_key, item.__class__))
             s = _pickle_dumps_digest(item)
             result.update({pre_key: s})
     return result
@@ -164,6 +172,17 @@ def _sanitize_model_name(model_name):
         model_name = re.sub(string=model_name, pattern='[\.\-]', repl='_')
     return model_name
 
+def _get_model_code(model_code=None, file=None):
+    ## compute model prefix
+    if file:
+        model_code = _read_file(file)
+    if not model_code:
+        if file is not None:
+            logger.info('Note - no model code detected from given file: {}'.format(file))
+        else:
+            logger.info('Note - no model code detected (neither file nor model_code given)')
+    return model_code
+
 def _cached_stan_fit(model_name='anon_model', file=None, model_code=None,
                     force=False, cache_dir=None, cache_only=None, 
                      fit_cachefile=None, **kwargs):
@@ -182,11 +201,11 @@ def _cached_stan_fit(model_name='anon_model', file=None, model_code=None,
                                                       include_modelfile=True, **kwargs)
     cache_dir = _get_cache_dir(cache_dir)
     model_name = _sanitize_model_name(model_name)
+    model_code = _get_model_code(model_code=model_code, file=file)
     logger.info('Step 1: Get compiled model code, possibly from cache')
     stan_model = cached(func=pystan.StanModel,
                          cache_filename=model_cachefile,
                          model_code=model_code,
-                         file=file,
                          cache_dir=cache_dir,
                          model_name=model_name,
                          cache_only=cache_only,
