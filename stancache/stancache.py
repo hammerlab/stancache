@@ -72,6 +72,10 @@ def _make_digest_dict(k, prefix=''):
             logger.debug('processing item ({}) as dataframe'.format(pre_key))
             s = _make_digest_dataframe(item)
             result.update({pre_key: s})
+        elif isinstance(item, pd.Series):
+            logger.debug('processing item ({}) as pd.Series'.format(pre_key))
+            s = _xxhash_item(item.values)
+            result.update({pre_key: s})
         elif isinstance(item, np.ndarray):
             logger.debug('processing item ({}) as np.ndarray'.format(pre_key))
             s = _xxhash_item(item)
