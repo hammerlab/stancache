@@ -34,6 +34,12 @@ def _make_digest_dataframe(item):
     s = _pickle_dumps_digest(tuple([index, columns, values]))
     return s
 
+
+def _xxhash_item(item):
+    h = xxhash.xxh64(item)
+    s = h.intdigest()
+    return s
+
 def _pickle_dumps_digest(item):
     s = pickle.dumps(item)
     h = _digest(s)
@@ -68,8 +74,7 @@ def _make_digest_dict(k, prefix=''):
             result.update({pre_key: s})
         elif isinstance(item, np.ndarray):
             logger.debug('processing item ({}) as np.ndarray'.format(pre_key))
-            h = xxhash.xxh64(item)
-            s = h.intdigest()
+            s = _xxhash_item(item)
             result.update({pre_key: s})
         elif isinstance(item, types.FunctionType):
             logger.debug('processing item ({}) as function'.format(pre_key))
@@ -79,9 +84,13 @@ def _make_digest_dict(k, prefix=''):
                 s = 'unhashable'
             result.update({pre_key: s})
         else:
-            logger.debug('processing item ({}) as other (using pickle)'.format(pre_key))
+            try:
+                logger.debug('processing item ({}) as other (using xxhash)'.format(pre_key))
+                s = _xxhash_item(item)
+            except:
+                logger.debug('processing item ({}) as other (using pickle)'.format(pre_key))
+                s = _pickle_dumps_digest(item)
             logger.debug('note: item ({}) is of type: {}'.format(pre_key, item.__class__))
-            s = _pickle_dumps_digest(item)
             result.update({pre_key: s})
     return result
     
