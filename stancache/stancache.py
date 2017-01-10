@@ -17,6 +17,7 @@ from . import config
 import types
 import numpy as np
 import xxhash
+import sys
 
 logger = logging.getLogger(__name__)
 
