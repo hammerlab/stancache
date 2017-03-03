@@ -11,12 +11,13 @@ Filecache for stan models
 Installation / Usage
 --------------------
 
-To install use pip:
+This package has not been pushed to pypi, so cannot be installed using `pip`
 
-    $ pip install stancache
+Instead, you can install from pip using "extended" git syntax:
 
+    $ pip install git+git://github.com/jburos/stancache
 
-Or clone the repo:
+Or clone the repo & run setup.py:
 
     $ git clone https://github.com/jburos/stancache.git
     $ python setup.py install
