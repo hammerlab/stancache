@@ -21,7 +21,7 @@ def restore_default_settings():
     """
     global __DEFAULTS
     __DEFAULTS.CACHE_DIR = defaults.CACHE_DIR
-    __DEFAULTS.SEED = defaults.SET_SEED
+    __DEFAULTS.SET_SEED = defaults.SET_SEED
     __DEFAULTS.SEED = defaults.SEED
     logging.info('Settings reverted to their default values.')
 
