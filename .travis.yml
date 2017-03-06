@@ -1,40 +1,39 @@
-sudo: false  # Use container-based infrastructure
+sudo: false
 language: python
 python:
-  - "2.7"
-  - "3.4"
+- '2.7'
+- '3.4'
 before_install:
-  # Commands below copied from: http://conda.pydata.org/docs/travis.html
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  # reset the shell's lookup table for program name to path mappings
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
+- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
+  -O miniconda.sh; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+  -O miniconda.sh; fi
+- bash miniconda.sh -b -p $HOME/miniconda
+- export PATH="$HOME/miniconda/bin:$PATH"
+- hash -r
+- conda config --set always_yes yes --set changeps1 no
+- conda update -q conda
+- conda info -a
 addons:
   apt:
     packages:
-    # install pandoc for use with pypandoc for converting the README
-    # from markdown to RST
     - pandoc
 install:
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy nose pandas matplotlib
-  - source activate test-environment
-  - pip install pypandoc
-  - pip install -r requirements.txt
-  - pip install .
-  - pip install coveralls
+- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy nose
+  pandas matplotlib
+- source activate test-environment
+- pip install pypandoc
+- pip install -r requirements.txt
+- pip install .
+- pip install coveralls
 script:
-  - pyensembl install --release 75 --species human
-  - nosetests test --with-coverage --cover-package=stancache && ./lint.sh
-after_success:
-  coveralls
+- pyensembl install --release 75 --species human
+- nosetests test --with-coverage --cover-package=stancache && ./lint.sh
+after_success: coveralls
+deploy:
+  provider: pypi
+  user: hammerlab
+  password:
+    secure: sUFI/6GSQLZkTozYNMDH/r5m6SGEEXeNBKS01OdYYs2637IG3CFwZqtNcJ0I5dMvJle5XA7LgZy5JS5NdCZ3/sEfWBWuEOmB6ZbOcOGjwyPugQlIZFI1+z+2VIik0sleaXabELGtQtHomdrERRKxQK22YN6symphLD77O9EI0bDRGvfBWIAmIrXJxA/XHkidn/Oi9n5rsf8q281dF+aZ73nflxvrRdSUWRT39LX4CHTKBTV50C5cDOoIQ2jqjBS+wKzOQDmT1aTaFgQ9w1VmdAmZYiqcuUWaJuyb+wYonZDUratfSZ6NOYUcf3E1CJ/raigWWoTTTC1mv5cbDcftJxWJXDnhxpJp10PpPDxrKf661QNB4g1UyrY51Kp9pRrqBsKMI2g8u/W7NVcUBZGOJpX/IgBYqVnuf0FG0wZN0fa1pYWlidBM4t2XcIA3r0k7KBxTAdtZrUG3w8aZDXhKoSbpMlzx+2oIJJ0QPnZdlTOvK2noXzr/ZFe5lh5wM6KOL9kSZTZdF9KeaxwcAxELlrQJgpA9qdgaLef4r2LG+0ZtgBOqLoZ07UFnxdf/a+QWhMQxsFKrbIqCH/qkwQLRI+NLsIM+WdxPqzP30kJ9jkgR04j9VhjcpCShSHbsgIU7XpZ0gNEoIXLXF1lhF1fOaskTTYJ9RB3KRtX5EE3UonM=
+  on:
+    branch: master
+    tags: true
