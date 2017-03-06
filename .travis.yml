@@ -26,7 +26,6 @@ install:
 - pip install .
 - pip install coveralls
 script:
-- pyensembl install --release 75 --species human
 - nosetests test --with-coverage --cover-package=stancache && ./lint.sh
 after_success: coveralls
 deploy:
