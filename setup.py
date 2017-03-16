@@ -5,6 +5,7 @@ import sys
 from os import getcwd, path
 sys.path.append(path.dirname(getcwd()))
 import versioneer
+from versioneer import get_version, get_cmdclass
 
 here = path.abspath(path.dirname(__file__))
 
@@ -22,12 +23,12 @@ dependency_links = [x.strip().replace('git+', '') for x in all_reqs if 'git+' no
 
 setup(
     name='stancache',
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
+    version=get_version(),
+    cmdclass=get_cmdclass(),
     description='Filecache for stan models',
     long_description=long_description,
     url='https://github.com/jburos/stancache',
-    download_url='https://github.com/jburos/stancache/tarball/' + versioneer.get_version(),
+    download_url='https://github.com/jburos/stancache/tarball/' + get_version(),
     license="http://www.apache.org/licenses/LICENSE-2.0.html",
     classifiers=[
         "Development Status :: 3 - Alpha",
