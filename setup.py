@@ -1,7 +1,9 @@
 from __future__ import print_function
 from setuptools import setup, find_packages
 from codecs import open
-from os import path
+import sys
+from os import getcwd, path
+sys.path.append(path.dirname(getcwd()))
 import versioneer
 
 here = path.abspath(path.dirname(__file__))
