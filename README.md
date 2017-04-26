@@ -36,7 +36,7 @@ Loading pickled pystan.fit objects into memory is also safer using `cached_stan_
 Getting started
 ---------------
 
-### Configuratation
+### Configuration
 
 The configuration uses python's [configparser](https://docs.python.org/2/library/configparser.html) module, allowing the user to either load a `config.ini` file from disk or set the configuration in code.
 
@@ -46,7 +46,7 @@ Currently, the config settings include
 
 * `CACHE_DIR` (defaults to `.cached_models`)
 * `SEED` (seed value passed to `pystan.stan` for reproducible research)
-* `SET_SEED` (boolean, whether to set the random.seed, systemwide in addition to stan_seed)
+* `SET_SEED` (boolean, whether to set the random.seed systemwide in addition to stan_seed)
 
 You can use `config.set_value(NAME=value)` to modify a setting.
 
@@ -74,11 +74,15 @@ Also see `?stancache.cached_stan_fit` for more details.
 
 ### Caching other items
 
-The caching is very sensitive to certain things which would change the returned object, such as the sort order of your data elements within the dictionary. But is not sensitive to other things (such as whether you use a file-based stan code or string-based version of same code). 
+The caching is very sensitive to certain things which would change the returned object, such as the sort order of your data elements within the dictionary. But is not sensitive to other things, such as whether you use a file-based stan code or string-based version of same code. 
 
-In practice, we find that it can be helpful to cache data-preparation steps, especially when simulating data. There is thus as `stancache.cached()` wrapper function for this purpose, to cache all objects _other_ than `pystan.stan` objects using the same file-cache settings. 
+In practice, we find that it can be helpful to cache data-preparation steps, especially when simulating data. There is thus a `stancache.cached()` wrapper function for this purpose,. This will save or cache all objects _other_ than `pystan.stan` objects to disk using the same file-cache settings as are used for stancache.
 
-A fairly common set-up for us is, for example, to fit a set of models in a distributed execution environment, then review the model results in a set of jupyter notebooks. In this case, in our jupyter notebook we will set a parameter of `cache_only=True` when loading model results into the Jupyter notebook to force a failure if the cache is not available. 
+### Avoiding re-executing a model
+
+There are a number of scenarios where you might want to use a cache of fitted models in read-only mode. You can avoid accidentally re-fitting the model by setting `cache_only=True`.
+
+For example, you may have fit a set of models which you want to read into a jupyter notebook for model exploration. Or, you may be reviewing a colleague's fitted model objects. Note that this is foolproof so please back up your work. 
 
 Contributing
 ------------
