@@ -11,3 +11,4 @@ cython>=0.22
 numpy
 dill
 xxhash
+seaborn
