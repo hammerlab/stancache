@@ -77,6 +77,10 @@ def _make_digest_dict(k, prefix=''):
             logger.debug('processing item ({}) as pd.Series'.format(pre_key))
             s = _xxhash_item(item.values)
             result.update({pre_key: s})
+        elif isinstance(item, np.matrixlib.defmatrix.matrix):
+            logger.debug('processing item ({}) as np.matrixlib.defmatrix.matrix'.format(pre_key))
+            s = _pickle_dumps_digest(item)
+            result.update({pre_key: s})
         elif isinstance(item, np.ndarray):
             logger.debug('processing item ({}) as np.ndarray'.format(pre_key))
             s = _xxhash_item(item)
